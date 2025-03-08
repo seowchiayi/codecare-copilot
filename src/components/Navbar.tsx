@@ -11,10 +11,8 @@ interface NavLink {
 }
 
 const navLinks: NavLink[] = [
-  { label: 'Home', href: '/' },
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Editor', href: '/editor' },
-  { label: 'Docs', href: '#' },
 ];
 
 export function Navbar() {
@@ -41,7 +39,7 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link 
-          to="/" 
+          to="/dashboard" 
           className="text-xl font-semibold flex items-center gap-2"
         >
           <div className="relative w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navbar } from '@/components/Navbar';
 import { MetricsGrid } from '@/components/MetricCard';
@@ -15,7 +14,8 @@ const Dashboard = () => {
   const [repoRef, isRepoVisible] = useScrollReveal();
   
   const handleConnectGitHub = () => {
-    window.location.href = apiClient.getGithubAuthUrl();
+    const githubAuthUrl = `${apiClient.getGithubAuthUrl()}?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&client_secret=${import.meta.env.VITE_GITHUB_SECRET_KEY}`;
+    window.location.href = githubAuthUrl;
   };
   
   const isAuthenticated = !!apiClient.getToken();
@@ -34,7 +34,7 @@ const Dashboard = () => {
               </p>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* <div className="flex items-center gap-3">
               {!isAuthenticated ? (
                 <Button onClick={handleConnectGitHub} className="gap-2">
                   <Github size={16} />
@@ -46,7 +46,7 @@ const Dashboard = () => {
                   <span>Export Report</span>
                 </Button>
               )}
-            </div>
+            </div> */}
           </div>
           
           {/* GitHub Connection Required Message */}

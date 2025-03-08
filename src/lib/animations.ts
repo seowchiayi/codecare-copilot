@@ -1,12 +1,11 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export function useScrollReveal() {
   const [isVisible, setIsVisible] = useState(false);
-  const [ref, setRef] = useState<HTMLElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!ref) return;
+    if (!ref.current) return;
     
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -22,14 +21,14 @@ export function useScrollReveal() {
       }
     );
     
-    observer.observe(ref);
+    observer.observe(ref.current);
     
     return () => {
-      if (ref) observer.unobserve(ref);
+      if (ref.current) observer.unobserve(ref.current);
     };
   }, [ref]);
   
-  return [setRef, isVisible];
+  return [ref, isVisible];
 }
 
 export function useTypewriter(text: string, speed: number = 50) {

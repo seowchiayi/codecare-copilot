@@ -1,46 +1,28 @@
+
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
-  TableCaption,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableCell,
 } from "@/components/ui/table"
 import { useRepositories } from '@/hooks/useRepositories';
 import { useCodeAnalysis } from '@/hooks/useCodeAnalysis';
-import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
-
-interface Issue {
-  message: string;
-  location: {
-    path: string;
-    positions: {
-      begin: {
-        line: number;
-      };
-    };
-  };
-  severity: 'ERROR' | 'WARNING' | 'INFO';
-}
-
-const severityColors: { [key: string]: string } = {
-  ERROR: "bg-red-500 text-white",
-  WARNING: "bg-yellow-500 text-white",
-  INFO: "bg-blue-500 text-white",
-};
 
 export function RepositoryAnalysis() {
   const [repoUrl, setRepoUrl] = useState('');
   const { repositories, fetchRepositories, isPending: isRepoPending } = useRepositories();
-  const { analyzeCode, isLoading: isAnalysisLoading } = useCodeAnalysis();
+  const { analyzeCode, isLoading: isAnalysisLoading } = useCodeAnalysis({
+    language: 'python',
+    code: '',
+  });
 
   const handleAnalyzeRepository = async (repo: string) => {
     try {
@@ -48,13 +30,13 @@ export function RepositoryAnalysis() {
       toast({
         title: "Analysis Started",
         description: "Your repository is being analyzed. Please wait for the results.",
-      })
+      });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Failed to start analysis",
         description: "There was an error starting the analysis. Please try again.",
-      })
+      });
     }
   };
 
@@ -66,7 +48,7 @@ export function RepositoryAnalysis() {
         variant: "destructive",
         title: "Failed to fetch repositories",
         description: "There was an error fetching the repositories. Please try again.",
-      })
+      });
     }
   };
 

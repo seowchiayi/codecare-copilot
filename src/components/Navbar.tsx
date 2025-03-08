@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Menu, X, Github } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 interface NavLink {
   label: string;
@@ -60,14 +59,6 @@ export function Navbar() {
           ))}
         </nav>
         
-        <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Github size={16} />
-            <span>Sign In</span>
-          </Button>
-          <Button size="sm">Try Now</Button>
-        </div>
-        
         <button 
           className="md:hidden" 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -90,13 +81,6 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-2 pb-3 space-y-3">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <Github size={16} />
-                <span>Sign In</span>
-              </Button>
-              <Button className="w-full">Try Now</Button>
-            </div>
           </div>
         </div>
       )}

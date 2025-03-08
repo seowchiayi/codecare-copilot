@@ -1,3 +1,4 @@
+
 import { apiClient } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 
@@ -14,17 +15,24 @@ export const useCodeAnalysis = (params: CodeAnalysisParams) => {
     queryKey: ["codeAnalysis", language, code, projectId],
     queryFn: async () => {
       try {
-        const response = await apiClient.submitAnalysis(language, code, projectId);
-        return response.data;
+        const response = await apiClient.analyzeCode(language, code, projectId);
+        return response;
       } catch (error) {
         console.error("Error during code analysis:", error);
         throw error;
       }
     },
-    enabled: !!code && !!language, // Ensure code and language are provided
+    enabled: false, // Don't fetch on mount, only when explicitly requested
     refetchOnWindowFocus: false,
     retry: false,
   });
 
-  return query;
+  const analyzeCode = async (repoName?: string) => {
+    return await query.refetch();
+  };
+
+  return {
+    ...query,
+    analyzeCode,
+  };
 };

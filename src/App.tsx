@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
 import NotFound from "./pages/NotFound";
 import ApiDocs from "./pages/ApiDocs";
+import GitHubCallback from "./pages/GitHubCallback";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/editor" element={<Editor />} />
           <Route path="/api-docs" element={<ApiDocs />} />
+          <Route path="/github-callback" element={<GitHubCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

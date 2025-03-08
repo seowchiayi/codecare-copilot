@@ -1,60 +1,80 @@
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiClient, AnalysisRequest, AnalysisResponse } from '@/services/api';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { apiClient, AnalysisResponse } from '@/services/api';
 
-export function useCodeAnalysis() {
-  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
+interface UseCodeAnalysisProps {
+  code?: string;
+  language?: string;
+  projectId?: string;
+  enabled?: boolean;
+}
+
+/**
+ * Hook to analyze code and get quality feedback
+ */
+export function useCodeAnalysis({
+  code = '',
+  language = 'python',
+  projectId,
+  enabled = false
+}: UseCodeAnalysisProps) {
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   
   // Submit code for analysis
-  const submitMutation = useMutation({
-    mutationFn: async (request: AnalysisRequest) => {
-      // For demo purposes, we're using the mock function
-      // In production, you would use: await apiClient.submitAnalysis(request);
-      const mockResponse = await apiClient.getMockAnalysis(request.code);
-      return mockResponse;
+  const { isPending: isSubmitting, mutateAsync: submitCode } = useQuery({
+    queryKey: ['submit-analysis', code, language, projectId],
+    queryFn: async () => {
+      if (!code.trim()) {
+        throw new Error('No code provided for analysis');
+      }
+      
+      try {
+        const result = await apiClient.submitAnalysis({
+          code,
+          language,
+          projectId
+        });
+        
+        setAnalysisId(result.analysisId);
+        return result;
+      } catch (error) {
+        toast.error('Failed to submit code for analysis');
+        throw error;
+      }
     },
-    onSuccess: (data) => {
-      toast.success('Code analysis complete');
-      setCurrentAnalysisId(data.id);
-    },
-    onError: (error: any) => {
-      toast.error(`Analysis failed: ${error.message || 'Unknown error'}`);
-    }
+    enabled: false // Manually triggered
   });
   
   // Get analysis results
-  const analysisQuery = useQuery({
-    queryKey: ['analysis', currentAnalysisId],
+  const analysis = useQuery({
+    queryKey: ['analysis-results', analysisId],
     queryFn: async () => {
-      if (!currentAnalysisId) {
-        throw new Error('No analysis ID provided');
+      if (!analysisId) {
+        throw new Error('No analysis ID available');
       }
       
-      // In production, you would use:
-      // return await apiClient.getAnalysisResults(currentAnalysisId);
-      
-      // For demo, we'll return the cached result from the mutation
-      return submitMutation.data as AnalysisResponse;
+      try {
+        return await apiClient.getAnalysisResults(analysisId);
+      } catch (error) {
+        toast.error('Failed to fetch analysis results');
+        throw error;
+      }
     },
-    enabled: !!currentAnalysisId && submitMutation.isSuccess,
-    refetchInterval: (data) => {
-      // If the analysis is still processing, poll every 3 seconds
-      return data?.status === 'processing' || data?.status === 'pending' ? 3000 : false;
-    }
+    enabled: !!analysisId && enabled,
   });
   
-  // Analyze code function
-  const analyzeCode = async (code: string, language: string = 'javascript') => {
-    submitMutation.mutate({ code, language });
-  };
+  // Combined loading state
+  const isLoading = isSubmitting || analysis.isLoading;
+  const isError = analysis.isError;
   
   return {
-    analyzeCode,
-    isAnalyzing: submitMutation.isPending,
-    analysis: analysisQuery.data,
-    isLoading: analysisQuery.isLoading || submitMutation.isPending,
-    error: analysisQuery.error || submitMutation.error
+    submitCode,
+    results: analysis.data,
+    isLoading,
+    isError,
+    isSuccess: analysis.isSuccess,
+    error: analysis.error
   };
 }

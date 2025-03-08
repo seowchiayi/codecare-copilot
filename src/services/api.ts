@@ -1,8 +1,9 @@
 
 import { toast } from "sonner";
 
-// Base API URL - in a production app, you would use environment variables
-const API_BASE_URL = "https://api.codequalitycopilot.example";
+// Base API URL from environment or default to localhost in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
 
 // Interface for API error responses
 interface ApiError {
@@ -17,43 +18,67 @@ interface AuthRequest {
   password: string;
 }
 
-interface AuthResponse {
+interface GithubAuthRequest {
+  code: string;
+}
+
+export interface AuthResponse {
   token: string;
   user: {
     id: string;
     email: string;
     name: string;
+    avatar_url?: string;
   };
+}
+
+// Repository interfaces
+export interface Repository {
+  id: string;
+  name: string;
+  full_name: string;
+  description?: string;
+  url: string;
+  language?: string;
+  default_branch: string;
 }
 
 // Analysis interfaces
 export interface AnalysisRequest {
-  language: string;
-  code: string;
-  projectId?: string;
+  repository_id: string;
+  branch?: string;
 }
 
-export interface CodeIssue {
+export interface SonarIssue {
   id: string;
-  line: number;
-  column: number;
-  message: string;
-  severity: 'info' | 'warning' | 'error' | 'critical';
   rule: string;
-  suggestions?: string[];
+  severity: string;
+  component: string;
+  line?: number;
+  message: string;
+  type: string;
+  status: string;
+}
+
+export interface SonarMetrics {
+  code_smells: number;
+  bugs: number;
+  vulnerabilities: number;
+  security_hotspots: number;
+  duplicated_lines_density: number;
+  coverage?: number;
+  reliability_rating: string;
+  security_rating: string;
+  maintainability_rating: string;
 }
 
 export interface AnalysisResponse {
   id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  issues: CodeIssue[];
-  metrics: {
-    complexity: number;
-    maintainability: number;
-    reliability: number;
-    security: number;
-    duplication: number;
-  };
+  status: string;
+  repository: string;
+  branch: string;
+  issues: SonarIssue[];
+  metrics: SonarMetrics;
   timestamp: string;
 }
 
@@ -115,6 +140,27 @@ export class ApiClient {
     return headers;
   }
   
+  // GitHub Authentication
+  
+  // Get GitHub OAuth URL
+  getGithubAuthUrl() {
+    const redirectUri = `${window.location.origin}/github-callback`;
+    return `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
+  }
+  
+  // Exchange GitHub code for token
+  async authenticateWithGithub(code: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/github`, {
+      method: 'POST',
+      headers: this.createHeaders(false),
+      body: JSON.stringify({ code }),
+    });
+    
+    const data = await handleResponse<AuthResponse>(response);
+    this.setToken(data.token);
+    return data;
+  }
+  
   // Authentication API
   async login(credentials: AuthRequest): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -144,9 +190,19 @@ export class ApiClient {
     this.clearToken();
   }
   
+  // Repository API
+  async getRepositories(): Promise<Repository[]> {
+    const response = await fetch(`${API_BASE_URL}/repositories`, {
+      method: 'GET',
+      headers: this.createHeaders(),
+    });
+    
+    return handleResponse<Repository[]>(response);
+  }
+  
   // Code Analysis API
-  async submitAnalysis(request: AnalysisRequest): Promise<{ analysisId: string }> {
-    const response = await fetch(`${API_BASE_URL}/analysis/submit`, {
+  async submitRepositoryAnalysis(request: AnalysisRequest): Promise<{ analysisId: string }> {
+    const response = await fetch(`${API_BASE_URL}/analysis/repository`, {
       method: 'POST',
       headers: this.createHeaders(),
       body: JSON.stringify(request),
@@ -162,55 +218,6 @@ export class ApiClient {
     });
     
     return handleResponse<AnalysisResponse>(response);
-  }
-  
-  // Mock function to get analysis for the demo
-  async getMockAnalysis(code: string): Promise<AnalysisResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Generate a mock response
-    return {
-      id: Math.random().toString(36).substring(2, 15),
-      status: 'completed',
-      issues: [
-        {
-          id: '1',
-          line: 3,
-          column: 10,
-          message: 'Variable "foo" is assigned but never used',
-          severity: 'warning',
-          rule: 'unused-variable',
-          suggestions: ['Remove unused variable', 'Use the variable in your code']
-        },
-        {
-          id: '2',
-          line: 7,
-          column: 5,
-          message: 'Function is too complex (cyclomatic complexity: 15)',
-          severity: 'error',
-          rule: 'cognitive-complexity',
-          suggestions: ['Break down the function into smaller functions']
-        },
-        {
-          id: '3',
-          line: 12,
-          column: 9,
-          message: 'Possible SQL injection vulnerability',
-          severity: 'critical',
-          rule: 'security-vulnerability',
-          suggestions: ['Use parameterized queries instead of string concatenation']
-        }
-      ],
-      metrics: {
-        complexity: 65,
-        maintainability: 72,
-        reliability: 85,
-        security: 60,
-        duplication: 12
-      },
-      timestamp: new Date().toISOString()
-    };
   }
 }
 
